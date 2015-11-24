@@ -60,20 +60,20 @@ inline Try<SymbolicLink> querySymbolicLinkData(const std::string& path)
   // Windows has no built-in way to tell whether a path points at a symbolic
   // link; but, we know that symbolic links are implemented with reparse
   // points, so we begin by checking that.
-  if (!reparsePointAttributeSet(absolutePath.get())) {
+  if (!reparse_point_attribute_set(absolutePath.get())) {
     return Error("Reparse point attribute is not set for path '" +
         absolutePath.get() + "', and therefore it is not a symbolic link");
   }
 
   const Try<shared_handle> symlinkHandle =
-    getHandleNoFollow(absolutePath.get());
+    get_handle_no_follow(absolutePath.get());
 
   if (symlinkHandle.isError()) {
     return Error(symlinkHandle.error());
   }
 
   // Finally, retrieve symlink data for the handle, if any.
-  Try<SymbolicLink> symlink = getSymbolicLinkData(symlinkHandle.get());
+  Try<SymbolicLink> symlink = get_symbolic_link_data(symlinkHandle.get());
 
   return symlink;
 }
