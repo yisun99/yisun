@@ -67,7 +67,6 @@
 #include <stout/os/exists.hpp>
 #include <stout/os/fcntl.hpp>
 #include <stout/os/fork.hpp>
-#include <stout/os/glob.hpp>
 #ifdef __linux__
 #include <stout/os/linux.hpp>
 #endif // __linux__
