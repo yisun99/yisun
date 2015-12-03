@@ -18,6 +18,8 @@
 // splitting platform specifc system calls into separate directories.
 #ifdef __WINDOWS__
 #include <stout/os/windows/shell.hpp>
+#define WIFEXITED(x) ((x) != 3)
+#define WEXITSTATUS(x) (x)
 #else
 #include <stout/os/posix/shell.hpp>
 #endif // __WINDOWS__

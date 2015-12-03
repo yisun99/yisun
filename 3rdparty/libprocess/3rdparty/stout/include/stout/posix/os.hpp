@@ -84,6 +84,8 @@
 
 #include <stout/os/raw/environment.hpp>
 
+#include <stout/os/shell.hpp>
+
 namespace os {
 
 // Forward declarations.
