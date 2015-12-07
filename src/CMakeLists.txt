@@ -170,10 +170,15 @@ set(SCHEDULER_SRC
 set(AGENT_SRC
   ${AGENT_SRC}
   slave/constants.cpp
+  slave/http.cpp
   slave/metrics.cpp
   slave/paths.cpp
+  slave/qos_controller.cpp
+  slave/qos_controllers/noop.cpp
+  slave/resource_estimators/noop.cpp
   slave/state.cpp
-  slave/resource_estimator.cpp
+  slave/status_update_manager.cpp
+  slave/validation.cpp
   )
 
 if (NOT WIN32)
@@ -181,13 +186,8 @@ if (NOT WIN32)
     ${AGENT_SRC}
     slave/gc.cpp
     slave/flags.cpp
-    slave/http.cpp
     slave/monitor.cpp
-    slave/qos_controller.cpp
-    slave/qos_controllers/noop.cpp
     slave/slave.cpp
-    slave/status_update_manager.cpp
-    slave/validation.cpp
     slave/containerizer/containerizer.cpp
     slave/containerizer/composing.cpp
     slave/containerizer/composing.hpp
@@ -215,7 +215,6 @@ if (NOT WIN32)
     slave/containerizer/mesos/provisioner/docker/registry_puller.cpp
     slave/containerizer/mesos/provisioner/docker/spec.cpp
     slave/containerizer/mesos/provisioner/docker/token_manager.cpp
-    slave/resource_estimators/noop.cpp
     )
 endif (NOT WIN32)
 
