@@ -182,13 +182,13 @@ set(AGENT_SRC
   slave/validation.cpp
   slave/monitor.cpp
   slave/containerizer/mesos/launch.cpp
+  slave/slave.cpp
   )
 
 if (NOT WIN32)
   set(AGENT_SRC
     ${AGENT_SRC}
     slave/flags.cpp
-    slave/slave.cpp
     slave/containerizer/containerizer.cpp
     slave/containerizer/composing.cpp
     slave/containerizer/composing.hpp
