@@ -26,6 +26,7 @@ set(ZOOKEEPER_C_ROOT ${ZOOKEEPER_ROOT}/src/c)
 set(ZOOKEEPER_LIB    ${ZOOKEEPER_ROOT}-lib/lib)
 
 # Convenience variables for include directories of third-party dependencies.
+set(ZOOKEEPER_INCLUDE_GENDIR ${ZOOKEEPER_C_ROOT}/generated)
 set(ZOOKEEPER_INCLUDE_DIR ${ZOOKEEPER_C_ROOT}/include)
 
 # Convenience variables for `lib` directories of built third-party dependencies.

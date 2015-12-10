@@ -28,8 +28,6 @@ set(PACKAGE_VERSION
 set(MESOS_PACKAGE_VERSION ${PACKAGE_VERSION})
 set(MESOS_PACKAGE_SOVERSION 0)
 
-#set(PATCHEXE_PATH "" CACHE PATH "Path for GnuWin32 patch.exe")
-
 # MESOS BUILD CONFIGURATION OPTIONS.
 ####################################
 option(_DEBUG "Set default build configuration to debug" ON)
