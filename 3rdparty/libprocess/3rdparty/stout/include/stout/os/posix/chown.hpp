@@ -20,7 +20,7 @@
 #include <stout/error.hpp>
 #include <stout/nothing.hpp>
 #include <stout/try.hpp>
-#include <stout/os/posix/system.hpp>
+#include <stout/os/posix/shell.hpp>
 
 
 namespace os {
