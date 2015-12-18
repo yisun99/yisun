@@ -54,6 +54,7 @@ if (WIN32)
 
   set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /MTd")
   set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /MT")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /bigobj")
 elseif (COMPILER_SUPPORTS_CXX11)
   # Finally, on non-Windows platforms, we must check that the current compiler
   # supports C++11.
