@@ -29,13 +29,10 @@ struct group
 };
 
 
-extern "C"
-{
 // Dummy implementation of `getgrgid` for POSIX compliance.
-struct group* getgrgid(gid_t)
+inline struct group* getgrgid(gid_t)
 {
   return NULL;
-}
 }
 
 

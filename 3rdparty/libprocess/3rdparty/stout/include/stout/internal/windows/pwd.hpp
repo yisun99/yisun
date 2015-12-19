@@ -30,13 +30,10 @@ struct passwd
 };
 
 
-extern "C"
-{
 // Dummy implementation of `getpwuid` for POSIX compliance.
-struct passwd* getpwuid(uid_t)
+inline struct passwd* getpwuid(uid_t)
 {
   return NULL;
-}
 }
 
 

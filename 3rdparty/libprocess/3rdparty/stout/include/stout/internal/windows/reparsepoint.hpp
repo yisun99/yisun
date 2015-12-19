@@ -223,7 +223,7 @@ inline Try<SymbolicLink> getSymbolicLinkData(const HANDLE& handle)
 }
 
 
-Try<Nothing> adjustCurrentTokenPrivileges(
+inline Try<Nothing> adjustCurrentTokenPrivileges(
   LPCSTR privilegeName,
   bool revokePrivilege,
   bool& privilegeHeld)
@@ -299,7 +299,7 @@ Try<Nothing> adjustCurrentTokenPrivileges(
 }
 
 
-Try<Nothing> createReparsePoint(
+inline Try<Nothing> createReparsePoint(
   const std::string& reparsePoint,
   const std::string& target)
 {
