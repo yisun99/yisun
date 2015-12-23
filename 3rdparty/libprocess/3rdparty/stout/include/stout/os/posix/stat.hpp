@@ -83,21 +83,22 @@ inline Try<Bytes> size(
     case DO_NOT_FOLLOW_SYMLINK: {
       if (::lstat(path.c_str(), &s) < 0) {
         return ErrnoError("Error invoking lstat for '" + path + "'");
+      } else {
+        return Bytes(s.st_size);
       }
       break;
     }
     case FOLLOW_SYMLINK: {
       if (::stat(path.c_str(), &s) < 0) {
         return ErrnoError("Error invoking stat for '" + path + "'");
+      } else {
+        return Bytes(s.st_size);
       }
       break;
     }
-    default: {
-      UNREACHABLE();
-    }
   }
 
-  return Bytes(s.st_size);
+  UNREACHABLE();
 }
 
 
