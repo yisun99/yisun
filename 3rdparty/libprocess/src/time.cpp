@@ -22,10 +22,10 @@ std::ostream& operator<<(std::ostream& out, const RFC1123& formatter)
 {
   time_t secs = static_cast<time_t>(formatter.time.secs());
 
-  tm timeInfo = {};
-  if (gmtime_r(&secs, &timeInfo) == NULL) {
+  tm *pTimeInfo;
+  if ((pTimeInfo = gmtime(&secs)) == NULL) {
     PLOG(ERROR)
-      << "Failed to convert from 'time_t' to a 'tm' struct using gmtime_r()";
+      << "Failed to convert from 'time_t' to a 'tm' struct using gmtime()";
     return out;
   }
 
@@ -56,13 +56,13 @@ std::ostream& operator<<(std::ostream& out, const RFC1123& formatter)
           buffer,
           sizeof(buffer),
           "%s, %02d %s %d %02d:%02d:%02d GMT",
-          WEEK_DAYS[timeInfo.tm_wday],
-          timeInfo.tm_mday,
-          MONTHS[timeInfo.tm_mon],
-          timeInfo.tm_year + 1900,
-          timeInfo.tm_hour,
-          timeInfo.tm_min,
-          timeInfo.tm_sec) < 0) {
+          WEEK_DAYS[pTimeInfo->tm_wday],
+          pTimeInfo->tm_mday,
+          MONTHS[pTimeInfo->tm_mon],
+		  pTimeInfo->tm_year + 1900,
+		  pTimeInfo->tm_hour,
+		  pTimeInfo->tm_min,
+		  pTimeInfo->tm_sec) < 0) {
     LOG(ERROR)
       << "Failed to format the 'time' to a string using snprintf";
     return out;
@@ -81,16 +81,16 @@ std::ostream& operator<<(std::ostream& out, const RFC3339& formatter)
   time_t secs = static_cast<time_t>(formatter.time.secs());
 
   // The RFC 3339 Format.
-  tm timeInfo = {};
-  if (gmtime_r(&secs, &timeInfo) == NULL) {
+  tm *pTimeInfo;
+  if ((pTimeInfo = gmtime(&secs)) == NULL) {
     PLOG(ERROR)
-      << "Failed to convert from 'time_t' to a 'tm' struct using gmtime_r()";
+      << "Failed to convert from 'time_t' to a 'tm' struct using gmtime()";
     return out;
   }
 
   char buffer[64] = {};
 
-  strftime(buffer, sizeof(buffer), "%Y-%m-%d %H:%M:%S", &timeInfo);
+  strftime(buffer, sizeof(buffer), "%Y-%m-%d %H:%M:%S", pTimeInfo);
   out << buffer;
 
   // Append the fraction part in nanoseconds.
