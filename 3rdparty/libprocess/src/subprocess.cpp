@@ -13,7 +13,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/types.h>
+
+#ifndef __WINDOWS__
 #include <unistd.h>
+#endif // __WINDOWS__
 
 #include <string>
 
@@ -101,7 +104,7 @@ static Try<Nothing> cloexec(int stdinFd[2], int stdoutFd[2], int stderrFd[2])
 
 static pid_t defaultClone(const lambda::function<int()>& func)
 {
-  pid_t pid = ::fork();
+  pid_t pid = os::fork();
   if (pid == -1) {
     return -1;
   } else if (pid == 0) {
@@ -212,7 +215,7 @@ Try<Subprocess> subprocess(
       break;
     }
     case Subprocess::IO::PIPE: {
-      if (::pipe(stdinFd) == -1) {
+      if (os::pipe(stdinFd) == -1) {
         return ErrnoError("Failed to create pipe");
       }
       break;
@@ -243,7 +246,7 @@ Try<Subprocess> subprocess(
       break;
     }
     case Subprocess::IO::PIPE: {
-      if (::pipe(stdoutFd) == -1) {
+      if (os::pipe(stdoutFd) == -1) {
         // Save the errno as 'close' below might overwrite it.
         ErrnoError error("Failed to create pipe");
         internal::close(stdinFd, stdoutFd, stderrFd);
@@ -282,7 +285,7 @@ Try<Subprocess> subprocess(
       break;
     }
     case Subprocess::IO::PIPE: {
-      if (::pipe(stderrFd) == -1) {
+      if (os::pipe(stderrFd) == -1) {
         // Save the errno as 'close' below might overwrite it.
         ErrnoError error("Failed to create pipe");
         internal::close(stdinFd, stdoutFd, stderrFd);

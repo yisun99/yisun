@@ -72,7 +72,7 @@ inline int system(const std::string& command)
 {
   UNIMPLEMENTED;
 }
-
+*/
 
 // This function is a portable version of execvpe ('p' means searching
 // executable from PATH and 'e' means setting environments). We add
@@ -83,10 +83,51 @@ inline int system(const std::string& command)
 // async signal safe.
 inline int execvpe(const char* file, char** argv, char** envp)
 {
-  UNIMPLEMENTED;
+	throw WindowsError(ERROR_NOT_SUPPORTED);
 }
 
+// Wait for a child matching PID to die.
+// If PID is greater than 0, match any process whose process ID is PID.
+// If PID is (pid_t) -1, match any process.
+// If PID is (pid_t) 0, match any process with the
+// same process group as the current process.
+// If PID is less than -1, match any process whose
+// process group is the absolute value of PID.
+// If the WNOHANG bit is set in OPTIONS, and that child
+// is not already dead, return (pid_t) 0.  If successful,
+// return PID and store the dead child's status in STAT_LOC.
+// Return (pid_t) -1 for errors.  If the WUNTRACED bit is
+// set in OPTIONS, return status for stopped children; otherwise don't.
+// 
+// This function is a cancellation point and therefore not marked with
+// __THROW.
+pid_t waitpid(pid_t pid, int *status, int options)
+{
+	throw WindowsError(ERROR_NOT_SUPPORTED);
+}
 
+/* Bits in the third argument to `waitpid'.  */
+#define	WNOHANG		1	/* Don't block waiting.  */
+#define	WUNTRACED	2	/* Report status of stopped children.  */
+
+// Clone the calling process, creating an exact copy.
+// Return -1 for errors, 0 to the new process,
+// and the process ID of the new process to the old process.
+pid_t fork(void)
+{
+	throw WindowsError(ERROR_NOT_SUPPORTED);
+}
+
+// Create a one-way communication channel (pipe).
+// If successful, two file descriptors are stored in PIPEDES;
+// bytes written on PIPEDES[1] can be read from PIPEDES[0].
+// Returns 0 if successful, -1 if not. 
+int pipe(int __pipedes[2])
+{
+	throw WindowsError(ERROR_NOT_SUPPORTED);
+}
+
+/*
 inline Try<Nothing> chown(
     uid_t uid,
     gid_t gid,

@@ -13,7 +13,10 @@
 #include <glog/logging.h>
 
 #include <sys/types.h>
+
+#ifndef __WINDOWS__
 #include <sys/wait.h>
+#endif // __WINDOWS__
 
 #include <process/delay.hpp>
 #include <process/future.hpp>
@@ -93,7 +96,7 @@ protected:
     // zombie; it will be reaped by us on the next loop.
     foreach (pid_t pid, promises.keys()) {
       int status;
-      if (waitpid(pid, &status, WNOHANG) > 0) {
+      if (os::waitpid(pid, &status, WNOHANG) > 0) {
         // We have reaped a child.
         notify(pid, status);
       } else if (!os::exists(pid)) {

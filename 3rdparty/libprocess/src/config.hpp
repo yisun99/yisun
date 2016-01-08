@@ -56,6 +56,7 @@ typedef int socklen_t
 #ifndef SOL_TCP
 #define SOL_TCP SOL_SOCKET
 #endif
+#endif
 #endif /* __WINDOWS__ */
 
 #endif // __CONFIG_HPP__
