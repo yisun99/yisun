@@ -1,4 +1,4 @@
-// Licensed under the Apache License, Version 2.0 (the "License");
+﻿// Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
@@ -16,16 +16,40 @@
 
 #include <process/time.hpp>
 
+namespace os {
+
+#ifdef _WINDOWS_
+
+inline struct tm* gmtime_r(const time_t *timep, struct tm *result)
+{
+  if (gmtime_s(result, timep))
+  {
+    return result;
+  }
+
+  return NULL;
+}
+
+#else // ​_WINDOWS_
+
+inline auto gmtime_r(const time_t *timep, struct tm *result) {
+  return ::gmtime_r(timep, result);
+}
+
+#endif // ​_WINDOWS_
+
+} // namespace os {
+
 namespace process {
 
 std::ostream& operator<<(std::ostream& out, const RFC1123& formatter)
 {
   time_t secs = static_cast<time_t>(formatter.time.secs());
 
-  tm *pTimeInfo;
-  if ((pTimeInfo = gmtime(&secs)) == NULL) {
+  tm timeInfo = {};
+  if (os::gmtime_r(&secs, &timeInfo) == NULL) {
     PLOG(ERROR)
-      << "Failed to convert from 'time_t' to a 'tm' struct using gmtime()";
+      << "Failed to convert from 'time_t' to a 'tm' struct using gmtime_r()";
     return out;
   }
 
@@ -56,13 +80,13 @@ std::ostream& operator<<(std::ostream& out, const RFC1123& formatter)
           buffer,
           sizeof(buffer),
           "%s, %02d %s %d %02d:%02d:%02d GMT",
-          WEEK_DAYS[pTimeInfo->tm_wday],
-          pTimeInfo->tm_mday,
-          MONTHS[pTimeInfo->tm_mon],
-		  pTimeInfo->tm_year + 1900,
-		  pTimeInfo->tm_hour,
-		  pTimeInfo->tm_min,
-		  pTimeInfo->tm_sec) < 0) {
+          WEEK_DAYS[timeInfo.tm_wday],
+          timeInfo.tm_mday,
+          MONTHS[timeInfo.tm_mon],
+		  timeInfo.tm_year + 1900,
+		  timeInfo.tm_hour,
+		  timeInfo.tm_min,
+		  timeInfo.tm_sec) < 0) {
     LOG(ERROR)
       << "Failed to format the 'time' to a string using snprintf";
     return out;
@@ -81,16 +105,16 @@ std::ostream& operator<<(std::ostream& out, const RFC3339& formatter)
   time_t secs = static_cast<time_t>(formatter.time.secs());
 
   // The RFC 3339 Format.
-  tm *pTimeInfo;
-  if ((pTimeInfo = gmtime(&secs)) == NULL) {
+  tm timeInfo = {};
+  if (os::gmtime_r(&secs, &timeInfo) == NULL) {
     PLOG(ERROR)
-      << "Failed to convert from 'time_t' to a 'tm' struct using gmtime()";
+      << "Failed to convert from 'time_t' to a 'tm' struct using gmtime_r()";
     return out;
   }
 
   char buffer[64] = {};
 
-  strftime(buffer, sizeof(buffer), "%Y-%m-%d %H:%M:%S", pTimeInfo);
+  strftime(buffer, sizeof(buffer), "%Y-%m-%d %H:%M:%S", timeInfo);
   out << buffer;
 
   // Append the fraction part in nanoseconds.
