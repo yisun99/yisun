@@ -100,8 +100,8 @@ if (WIN32)
     FATAL_ERROR
     "GnuWin32 patch.exe was not found. Use -DPATCHEXE_PATH to "
     "provide the local path of GnuWin32 patch.exe"
-    "Windows builds of Mesos requires GnuWin32 patch.exe "
-    "to apply updates to ZooKeeper-3.4.5. You may get it from "
+    "Mesos for Windows requires GnuWin32 patch.exe "
+    "to apply updates. You may get it from "
     "http://gnuwin32.sourceforge.net/packages/patch.htm"
     )
     return()
@@ -109,10 +109,34 @@ if (WIN32)
     message(
     STATUS
     "GnuWin32 patch.exe exists at: "
-    ${GNUWIN32_PATCH_EXECUTABLE}
-    )
+    ${GNUWIN32_PATCH_EXECUTABLE})
+
+    #
+    # First: Copy patch.exe and patch.exe.manifest to the user temp dir where elevation is not required
+    # Set \Users\<user>\AppData\Local\Temp dir
+    set(USER_TMP_DIR "TMP")
+
+    # Set full path for temp location of patch.exe
+    set(PATCHEXE_LOCATION $ENV{${USER_TMP_DIR}}/patch.exe)
+
+    #set full path for patch.exe.manifest
+    set(PATCHMANIFEST_LOCATION ${MESOS_3RDPARTY_SRC}/patch.exe.manifest)
+
+    # Set full path for temp location of patch.exe.manifest
+    set(PATCHMANIFEST_TMP_LOCATION $ENV{${USER_TMP_DIR}}/patch.exe.manifest)
+
+    # Copy patch.exe and path.exe.manifest to temp location
+    configure_file(${GNUWIN32_PATCH_EXECUTABLE} ${PATCHEXE_LOCATION} COPYONLY)
+    configure_file(${PATCHMANIFEST_LOCATION} ${PATCHMANIFEST_TMP_LOCATION} COPYONLY)
+
+    #
+    # Second: Apply manifest to patch command
+    set(APPLY_PATCH_MANIFEST_COMMAND  "mt.exe" -manifest mt ${PATCHMANIFEST_TMP_LOCATION} -outputresource:${PATCHEXE_LOCATION};1)
+
+    add_custom_command(OUTPUT   patch.exe
+                       COMMAND  ${APPLY_PATCH_MANIFEST_COMMAND})
   endif()
-ENDIF (WIN32)
+endif (WIN32)
 
 # SUBDIRECTORIES.
 #################
