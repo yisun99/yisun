@@ -114,7 +114,7 @@ std::ostream& operator<<(std::ostream& out, const RFC3339& formatter)
 
   char buffer[64] = {};
 
-  strftime(buffer, sizeof(buffer), "%Y-%m-%d %H:%M:%S", timeInfo);
+  strftime(buffer, sizeof(buffer), "%Y-%m-%d %H:%M:%S", &timeInfo);
   out << buffer;
 
   // Append the fraction part in nanoseconds.
