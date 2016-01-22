@@ -82,18 +82,17 @@ inline int system(const std::string& command)
 }
 */
 
-#define WNOHANG     1				/* dont hang in wait */
-#define WUNTRACED   2				/* tell about stopped, untraced children */
+#define WNOHANG     1               /* dont hang in wait */
+#define WUNTRACED   2               /* tell about stopped, untraced children */
 
-#define WIFEXITED(x) true			/* whether the child terminated normally */
-#define WIFSIGNALED(x) false		/* whether the child was terminated by a signal */
-#define WCOREDUMP(x) false			/* whether the child produced a core dump, only be used if WIFSIGNALED is true*/
-#define WIFSTOPPED(x) false			/* whether the child was stopped by delivery of a signal */
+#define WIFEXITED(x) true           /* whether the child terminated normally */
+#define WIFSIGNALED(x) false        /* whether the child was terminated by a signal */
+#define WCOREDUMP(x) false          /* whether the child produced a core dump, only be used if WIFSIGNALED is true*/
+#define WIFSTOPPED(x) false         /* whether the child was stopped by delivery of a signal */
 
 #define WEXITSTATUS(x) (x & 0xFF)	/* returns the exit status of the child, only be used if WIFEXITED is true */
 #define WTERMSIG(x) 0				/* returns the number of the signals that caused the child process to terminate,
 									   only be used if WIFSIGNALED is true */
-
   // Suspends execution of the calling process until a child specified
   // by pid argument has changed state. By default, waitpid() waits only
   // for termninated children, but this behavior is modifiable via the
@@ -117,7 +116,7 @@ inline int system(const std::string& command)
 
   inline pid_t waitpid(pid_t pid, int *status, int options)
   {
-	  // For now, we only implement: pid > 0 && options = 0
+	  // For now, we only implement: (pid > 0) && (options is 0 or WNOHANG)
 	  if ((pid <= 0) || (options != 0 && options != WNOHANG))
 	  {
 		  // Function not implemented
@@ -183,6 +182,27 @@ inline int system(const std::string& command)
 
 	  // Return the pid of the child process for which the status is reported
 	  return pid;
+  }
+
+  // This function is used to map the error code from gethostname() to a message
+  // string. The specific error code is retrieved by calling WSAGetLastError().
+  // FormatMessage() is used to obtain the message string.
+  //
+  // In this Windows version, argument err is not used; it's here for compatibility.
+  const char *hstrerror(int err)
+  {
+	  static char buffer[256];
+
+	  ::FormatMessage(
+		  FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
+		  NULL,
+		  WSAGetLastError(),
+		  MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
+		  buffer,
+		  sizeof(buffer) / sizeof(char),
+		  NULL);
+
+	  return buffer;
   }
 
 /*
