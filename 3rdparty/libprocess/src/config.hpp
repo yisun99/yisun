@@ -54,10 +54,6 @@
 #endif /* __FreeBSD__ */
 
 #ifdef __WINDOWS__
-<<<<<<< HEAD
-=======
-#ifdef _WINDOWS_
->>>>>>> 7779aba... Windows: Convert POSIX parameters to Windows API.
 typedef int socklen_t
 #ifndef MSG_NOSIGNAL
 #define MSG_NOSIGNAL 0
