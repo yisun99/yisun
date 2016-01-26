@@ -35,331 +35,211 @@
 #include <stout/os/os.hpp>
 #include <stout/os/config.hpp>
 
-#define WNOHANG 0
-
 #define SIGPIPE 100
 
 namespace os {
 
-  inline int pagesize()
-  {
-    SYSTEM_INFO si = {0};
-    GetSystemInfo(&si);
-    return si.dwPageSize;
-  };
+    inline int pagesize()
+    {
+        SYSTEM_INFO si = { 0 };
+        GetSystemInfo(&si);
+        return si.dwPageSize;
+    };
 
-  inline long cpu()
-  {
-    return 4;
-  };
+    inline long cpu()
+    {
+        return 4;
+    };
 
-// Sets the value associated with the specified key in the set of
-// environment variables.
-inline void setenv(const std::string& key,
-                   const std::string& value,
-                   bool overwrite = true)
-{
+    // Sets the value associated with the specified key in the set of
+    // environment variables.
+    inline void setenv(const std::string& key,
+        const std::string& value,
+        bool overwrite = true)
+    {
 
-}
+    }
 
-/*
-// Unsets the value associated with the specified key in the set of
-// environment variables.
-inline void unsetenv(const std::string& key)
-{
-  UNIMPLEMENTED;
-}
+    /*
+    // Unsets the value associated with the specified key in the set of
+    // environment variables.
+    inline void unsetenv(const std::string& key)
+    {
+    UNIMPLEMENTED;
+    }
 
+    // Executes a command by calling "/bin/sh -c <command>", and returns
+    // after the command has been completed. Returns 0 if succeeds, and
+    // return -1 on error (e.g., fork/exec/waitpid failed). This function
+    // is async signal safe. We return int instead of returning a Try
+    // because Try involves 'new', which is not async signal safe.
+    inline int system(const std::string& command)
+    {
+    UNIMPLEMENTED;
+    }
+    */
 
-// Executes a command by calling "/bin/sh -c <command>", and returns
-// after the command has been completed. Returns 0 if succeeds, and
-// return -1 on error (e.g., fork/exec/waitpid failed). This function
-// is async signal safe. We return int instead of returning a Try
-// because Try involves 'new', which is not async signal safe.
-inline int system(const std::string& command)
-{
-  UNIMPLEMENTED;
-}
-*/
+    // This function is used to map the error code from gethostname() to a message
+    // string. The specific error code is retrieved by calling WSAGetLastError().
+    // FormatMessage() is used to obtain the message string.
+    //
+    // In this Windows version, argument err is not used; it's here for compatibility.
+    const char *hstrerror(int err)
+    {
+        static char buffer[256];
 
-#define WNOHANG     1               /* dont hang in wait */
-#define WUNTRACED   2               /* tell about stopped, untraced children */
+        ::FormatMessage(
+            FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
+            NULL,
+            WSAGetLastError(),
+            MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
+            buffer,
+            sizeof(buffer) / sizeof(char),
+            NULL);
 
-#define WIFEXITED(x) true           /* whether the child terminated normally */
-#define WIFSIGNALED(x) false        /* whether the child was terminated by a signal */
-#define WCOREDUMP(x) false          /* whether the child produced a core dump, only be used if WIFSIGNALED is true*/
-#define WIFSTOPPED(x) false         /* whether the child was stopped by delivery of a signal */
+        return buffer;
+    }
 
-#define WEXITSTATUS(x) (x & 0xFF)	/* returns the exit status of the child, only be used if WIFEXITED is true */
-#define WTERMSIG(x) 0				/* returns the number of the signals that caused the child process to terminate,
-									   only be used if WIFSIGNALED is true */
-  // Suspends execution of the calling process until a child specified
-  // by pid argument has changed state. By default, waitpid() waits only
-  // for termninated children, but this behavior is modifiable via the
-  // options argument
-  //
-  // The value of pid can be:
-  // <-1: meaning wait for any child process whose process group ID is equal to the absolute value of pid.
-  // -1: meaning wait for any child process.
-  // 0: meaning wait for any child process whose process group ID is equal to that of the calling process.
-  // >0: meaning wait for the child whose process ID is equal to the value of pid.
-  //
-  // The value of options is an OR of zero or more of the following constants:
-  // WNOHANG: return immediately if no child has exited.
-  // WUNTRACED: also return if a child has stopped (but not traced via ptrace(2)). Status for traced children
-  //		which have stopped is provided even if this option is not specified.
-  //
-  // If status is not NULL, waitpid() stores status information in the int to which it points.
-  //
-  // Returns a value equal to the process ID of the child process for which status is reported. If the status
-  // is not available, 0 is returned. Otherwise, -1 shall be returend and errno set to indicate the error.
+    /*
+    // This function is a portable version of execvpe ('p' means searching
+    // executable from PATH and 'e' means setting environments). We add
+    // this function because it is not available on all systems.
+    //
+    // NOTE: This function is not thread safe. It is supposed to be used
+    // only after fork (when there is only one thread). This function is
+    // async signal safe.
+    inline int execvpe(const char* file, char** argv, char** envp)
+    {
+    UNIMPLEMENTED;
+    }
 
-  inline pid_t waitpid(pid_t pid, int *status, int options)
-  {
-	  // For now, we only implement: (pid > 0) && (options is 0 or WNOHANG)
-	  if ((pid <= 0) || (options != 0 && options != WNOHANG))
-	  {
-		  // Function not implemented
-		  errno = ENOSYS;
-		  return -1;
-	  }
-
-	  // TODO(yisun) : check pid is one of the child processes
-	  // if not, set errno to ECHILD and return -1
-
-	  // Open the child process
-	  HANDLE hProcess;
-	  hProcess = ::OpenProcess(
-		  PROCESS_QUERY_INFORMATION | SYNCHRONIZE,
-		  FALSE,
-		  static_cast<DWORD>(pid));
-
-	  // Error out if not able to open
-	  if (hProcess == NULL)
-	  {
-		  // Failed to open the child process
-		  errno = ECHILD;
-		  return -1;
-	  }
-	  std::shared_ptr<void> hSafeProcess(hProcess, ::CloseHandle);
-
-	  // Wait for child to terminate by default
-	  // otherwise (WNOHANG), no wait
-	  DWORD dwMilliseconds = (options == 0) ? INFINITE : 0;
-
-	  // Wait for the child process
-	  DWORD dwRes = ::WaitForSingleObject(hSafeProcess.get(), dwMilliseconds);
-
-	  // Error out if wait failed
-	  if ((options == 0 && dwRes != WAIT_OBJECT_0) ||
-		  (options == WNOHANG && dwRes != WAIT_OBJECT_0 && dwRes != WAIT_TIMEOUT))
-	  {
-		  // Failed to wait the child process
-		  errno = ECHILD;
-		  return -1;
-	  }
-
-	  // Child not terminated yet in the case of WNOHANG
-	  if (dwRes == WAIT_TIMEOUT)
-	  {
-		  return 0;
-	  }
-
-	  // dwRes == WAIT_OBJECT_0: retrieve the process termination status
-	  DWORD dwExitCode = 0;
-	  if (!::GetExitCodeProcess(hSafeProcess.get(), &dwExitCode))
-	  {
-		  // Failed to retrieve the status
-		  errno = ECHILD;
-		  return -1;
-	  }
-
-	  // Return the exit code in status
-	  if (status != NULL)
-	  {
-		  *status = dwExitCode;
-	  }
-
-	  // Return the pid of the child process for which the status is reported
-	  return pid;
-  }
-
-  // This function is used to map the error code from gethostname() to a message
-  // string. The specific error code is retrieved by calling WSAGetLastError().
-  // FormatMessage() is used to obtain the message string.
-  //
-  // In this Windows version, argument err is not used; it's here for compatibility.
-  const char *hstrerror(int err)
-  {
-	  static char buffer[256];
-
-	  ::FormatMessage(
-		  FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
-		  NULL,
-		  WSAGetLastError(),
-		  MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
-		  buffer,
-		  sizeof(buffer) / sizeof(char),
-		  NULL);
-
-	  return buffer;
-  }
-
-/*
-// This function is a portable version of execvpe ('p' means searching
-// executable from PATH and 'e' means setting environments). We add
-// this function because it is not available on all systems.
-//
-// NOTE: This function is not thread safe. It is supposed to be used
-// only after fork (when there is only one thread). This function is
-// async signal safe.
-inline int execvpe(const char* file, char** argv, char** envp)
-{
-  UNIMPLEMENTED;
-}
-
-
-inline Try<Nothing> chown(
+    inline Try<Nothing> chown(
     uid_t uid,
     gid_t gid,
     const std::string& path,
     bool recursive)
-{
-  UNIMPLEMENTED;
-}
+    {
+    UNIMPLEMENTED;
+    }
 
+    inline Try<Nothing> chmod(const std::string& path, int mode)
+    {
+    UNIMPLEMENTED;
+    }
 
-inline Try<Nothing> chmod(const std::string& path, int mode)
-{
-  UNIMPLEMENTED;
-}
+    inline Try<Nothing> chroot(const std::string& directory)
+    {
+    UNIMPLEMENTED;
+    }
 
-
-inline Try<Nothing> chroot(const std::string& directory)
-{
-  UNIMPLEMENTED;
-}
-
-
-inline Try<Nothing> mknod(
+    inline Try<Nothing> mknod(
     const std::string& path,
     mode_t mode,
     dev_t dev)
-{
-  UNIMPLEMENTED;
-}
+    {
+    UNIMPLEMENTED;
+    }
 
+    inline Result<uid_t> getuid(const Option<std::string>& user = None())
+    {
+    UNIMPLEMENTED;
+    }
 
-inline Result<uid_t> getuid(const Option<std::string>& user = None())
-{
-  UNIMPLEMENTED;
-}
+    inline Result<gid_t> getgid(const Option<std::string>& user = None())
+    {
+    UNIMPLEMENTED;
+    }
 
+    inline Try<Nothing> su(const std::string& user)
+    {
+    UNIMPLEMENTED;
+    }
 
-inline Result<gid_t> getgid(const Option<std::string>& user = None())
-{
-  UNIMPLEMENTED;
-}
+    inline Result<std::string> user(Option<uid_t> uid = None())
+    {
+    UNIMPLEMENTED;
+    }
+    // Returns the list of files that match the given (shell) pattern.
+    inline Try<std::list<std::string>> glob(const std::string& pattern)
+    {
+    UNIMPLEMENTED;
+    }
+    */
 
+    // Suspends execution for the given duration.
+    inline Try<Nothing> sleep(const Duration& duration)
+    {
+        return Nothing();
+    }
 
-inline Try<Nothing> su(const std::string& user)
-{
-  UNIMPLEMENTED;
-}
+    // Returns the total number of cpus (cores).
+    inline Try<long> cpus()
+    {
+        return 4;
+    }
 
+    // Returns load struct with average system loads for the last
+    // 1, 5 and 15 minutes respectively.
+    // Load values should be interpreted as usual average loads from
+    // uptime(1).
+    inline Try<Load> loadavg()
+    {
+        return Load();
+    }
 
-inline Result<std::string> user(Option<uid_t> uid = None())
-{
-  UNIMPLEMENTED;
-}
-// Returns the list of files that match the given (shell) pattern.
-inline Try<std::list<std::string>> glob(const std::string& pattern)
-{
-UNIMPLEMENTED;
-}
-*/
+    // Returns the total size of main and free memory.
+    inline Try<Memory> memory()
+    {
+        return Memory();
+    }
 
-// Suspends execution for the given duration.
-inline Try<Nothing> sleep(const Duration& duration)
-{
-  return Nothing();
-}
+    // Return the system information.
+    inline Try<UTSInfo> uname()
+    {
+        return UTSInfo();
+    }
 
+    inline Try<std::list<Process>> processes()
+    {
+        return std::list<Process>();
+    }
 
+    inline size_t recv(int sockfd, void *buf, size_t len, int flags) {
+        return ::recv(sockfd, (char*)buf, len, flags);
+    }
 
+    inline int setsockopt(int socket, int level, int option_name,
+        const void *option_value, socklen_t option_len) {
+        return ::setsockopt(socket, level, option_name, (const char*)option_value, option_len);
+    }
 
-// Returns the total number of cpus (cores).
-inline Try<long> cpus()
-{
-  return 4;
-}
+    inline int getsockopt(int socket, int level, int option_name,
+        void* option_value, socklen_t* option_len) {
+        return ::getsockopt(socket, level, option_name, (char*)option_value, option_len);
+    }
 
+    // Looks in the environment variables for the specified key and
+    // returns a string representation of its value. If no environment
+    // variable matching key is found, None() is returned.
+    inline Option<std::string> getenv(const std::string& key)
+    {
+        char* value = ::getenv(key.c_str());
 
-// Returns load struct with average system loads for the last
-// 1, 5 and 15 minutes respectively.
-// Load values should be interpreted as usual average loads from
-// uptime(1).
-inline Try<Load> loadavg()
-{
-  return Load();
-}
+        if (value == NULL) {
+            return None();
+        }
 
+        return std::string(value);
+    }
 
-// Returns the total size of main and free memory.
-inline Try<Memory> memory()
-{
-  return Memory();
-}
-
-
-// Return the system information.
-inline Try<UTSInfo> uname()
-{
-  return UTSInfo();
-}
-
-
-inline Try<std::list<Process>> processes()
-{
-  return std::list<Process>();
-}
-
-inline size_t recv(int sockfd, void *buf, size_t len, int flags) {
-  return ::recv(sockfd, (char*)buf, len, flags);
-}
-
-inline int setsockopt(int socket, int level, int option_name,
-       const void *option_value, socklen_t option_len) {
-  return ::setsockopt(socket, level, option_name, (const char*)option_value, option_len);
-}
-
-inline int getsockopt(int socket, int level, int option_name,
-  void* option_value, socklen_t* option_len) {
-  return ::getsockopt(socket, level, option_name, (char*)option_value, option_len);
-}
-
-// Looks in the environment variables for the specified key and
-// returns a string representation of its value. If no environment
-// variable matching key is found, None() is returned.
-inline Option<std::string> getenv(const std::string& key)
-{
-  char* value = ::getenv(key.c_str());
-
-  if (value == NULL) {
-    return None();
-  }
-
-  return std::string(value);
-}
-
-inline struct tm* gmtime_r(const time_t *timep, struct tm *result)
-{
-  if (gmtime_s(result, timep))
-  {
-    return result;
-  }
-  return NULL;
-}
+    inline struct tm* gmtime_r(const time_t *timep, struct tm *result)
+    {
+        if (gmtime_s(result, timep))
+        {
+            return result;
+        }
+        return NULL;
+    }
 
 } // namespace os {
 

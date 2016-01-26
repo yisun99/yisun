@@ -24,44 +24,44 @@
 
 namespace os {
 
-// Runs a shell command formatted with varargs and return the return value
-// of the command. Optionally, the output is returned via an argument.
-// TODO(vinod): Pass an istream object that can provide input to the command.
-template <typename... T>
-Try<std::string> shell(const std::string& fmt, const T&... t)
-{
-  return "";
-}
+#define popen   _popen
+#define pclose  _pclose
 
-// Canonical constants used as platform-dependent args to `exec` calls.
-// name() is the command name, arg0() is the first argument received
-// by the callee, usualy the command name and arg1() is the second
-// command argument received by the callee.
-struct shell_const
-{
-  static const char* name()
-  {
-    return "cmd.exe";
-  }
-  static const char* arg0()
-  {
-    return "cmd.exe";
-  }
-  static const char* arg1()
-  {
-    return "/c";
-  }
-};
+    // Returns a string describing the signal number passed in sig
+    // Empty string for Windows
+    inline char *strsignal(int sig)
+    {
+        return "";
+    }
 
+    // Canonical constants used as platform-dependent args to `exec` calls.
+    // name() is the command name, arg0() is the first argument received
+    // by the callee, usualy the command name and arg1() is the second
+    // command argument received by the callee.
+    struct shell_const
+    {
+        static const char* name()
+        {
+            return "cmd.exe";
+        }
+        static const char* arg0()
+        {
+            return "cmd.exe";
+        }
+        static const char* arg1()
+        {
+            return "/c";
+        }
+    };
 
-// Executes a command by calling "cmd /c <command>", and returns
-// after the command has been completed. Returns 0 if succeeds, and
-// return -1 on error
-inline int system(const std::string& command)
-{
-    return ::_spawnl(_P_WAIT, shell_const::name(), shell_const::arg0(),
-                      shell_const::arg1(), command.c_str());
-}
+    // Executes a command by calling "cmd /c <command>", and returns
+    // after the command has been completed. Returns 0 if succeeds, and
+    // return -1 on error
+    inline int system(const std::string& command)
+    {
+        return ::_spawnl(_P_WAIT, shell_const::name(), shell_const::arg0(),
+            shell_const::arg1(), command.c_str());
+    }
 
 } // namespace os {
 
