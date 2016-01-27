@@ -184,7 +184,8 @@ namespace os {
     // uptime(1).
     inline Try<Load> loadavg()
     {
-        return Load();
+        // no Windows equivalent, return an error until there is a need
+        return ErrnoError("Failed to determine system load averages");
     }
 
     // Returns the total size of main and free memory.
