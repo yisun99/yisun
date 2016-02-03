@@ -951,7 +951,7 @@ Future<bool> MesosContainerizerProcess::__launch(
 
     // We assume this should not fail under reasonable conditions so we
     // use CHECK.
-    CHECK(pipe(pipes) == 0);
+    // CHECK(pipe(pipes) == 0);
 
     // Prepare the flags to pass to the launch process.
     MesosContainerizerLaunch::Flags launchFlags;

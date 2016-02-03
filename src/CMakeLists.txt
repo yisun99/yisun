@@ -226,15 +226,16 @@ set(AGENT_SRC
   slave/containerizer/fetcher.cpp
   slave/resource_estimator.cpp
   slave/containerizer/containerizer.cpp
-  slave/containerizer/docker.cpp
   slave/containerizer/external_containerizer.cpp
+  slave/containerizer/composing.cpp
+   slave/containerizer/mesos/containerizer.cpp
   )
 
 if (NOT WIN32)
   set(AGENT_SRC
     ${AGENT_SRC}
     slave/slave.cpp
-    slave/containerizer/composing.cpp
+    slave/containerizer/docker.cpp
     slave/containerizer/mesos/isolator.cpp
     slave/containerizer/mesos/launcher.cpp
     slave/containerizer/mesos/mount.cpp
