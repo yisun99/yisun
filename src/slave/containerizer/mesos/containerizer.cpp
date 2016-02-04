@@ -79,6 +79,10 @@
 #include "slave/containerizer/mesos/isolators/network/port_mapping.hpp"
 #endif
 
+#ifdef __WINDOWS__
+#include <slave/containerizer/mesos/isolators/windows.hpp>
+#endif // __WINDOWS__
+
 #include "slave/containerizer/mesos/containerizer.hpp"
 #include "slave/containerizer/mesos/launch.hpp"
 #include "slave/containerizer/mesos/provisioner/provisioner.hpp"
@@ -226,8 +230,9 @@ Try<MesosContainerizer*> MesosContainerizer::create(
 #endif
 #else // !__WINDOWS__
     { "windows/cpu", &WindowsCpuIsolatorProcess::create },
-    { "filesystem/windows", &WindowsFilesystemIsolatorProcess::create }
-#endif // !__WINDOWS__
+    { "filesystem/windows", &WindowsFilesystemIsolatorProcess::create },
+    {"windows/mem", &WindowsMemIsolatorProcess::create}
+#endif // __WINDOWS__
   };
 
   vector<Owned<Isolator>> isolators;

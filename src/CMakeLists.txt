@@ -246,6 +246,7 @@ set(AGENT_SRC
   slave/containerizer/mesos/provisioner/appc/store.cpp
   slave/containerizer/mesos/provisioner/appc/paths.cpp
   slave/containerizer/mesos/provisioner/appc/spec.cpp
+  slave/containerizer/mesos/isolator.cpp
   )
 
 if (NOT WIN32)
