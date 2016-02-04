@@ -60,8 +60,12 @@ inline Try<int> connect(int s, const Address& address)
 {
   struct sockaddr_storage storage =
     net::createSockaddrStorage(address.ip, address.port);
-
   int error = ::connect(s, (struct sockaddr*) &storage, address.size());
+
+#ifdef __WINDOWS__
+  fd_set sock = {1,{s}};
+  error = ::select(0,0,&sock, 0,0);
+#endif
   if (error < 0) {
     return ErrnoError("Failed to connect to " + stringify(address));
   }
