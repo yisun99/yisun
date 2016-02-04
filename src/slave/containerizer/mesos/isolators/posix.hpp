@@ -168,29 +168,6 @@ private:
   PosixCpuIsolatorProcess() {}
 };
 
-
-class WindowsCpuIsolatorProcess : public PosixIsolatorProcess
-{
-public:
-  static Try<mesos::slave::Isolator*> create(const Flags& flags)
-  {
-    process::Owned<MesosIsolatorProcess> process(
-      new WindowsCpuIsolatorProcess());
-
-    return new MesosIsolator(process);
-  }
-
-  virtual process::Future<ResourceStatistics> usage(
-    const ContainerID& containerId)
-  {
-    return ResourceStatistics();
-  }
-
-protected:
-  WindowsCpuIsolatorProcess() {}
-};
-
-
 class PosixMemIsolatorProcess : public PosixIsolatorProcess
 {
 public:

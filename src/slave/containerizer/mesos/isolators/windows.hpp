@@ -134,9 +134,26 @@ protected:
     promises;
 };
 
+class WindowsCpuIsolatorProcess : public WindowsIsolatorProcess
+{
+public:
+  static Try<mesos::slave::Isolator*> create(const Flags& flags)
+  {
+    process::Owned<MesosIsolatorProcess> process(
+      new WindowsCpuIsolatorProcess());
 
+    return new MesosIsolator(process);
+  }
 
+  virtual process::Future<ResourceStatistics> usage(
+    const ContainerID& containerId)
+  {
+    return ResourceStatistics();
+  }
 
+protected:
+  WindowsCpuIsolatorProcess() {}
+};
 
 class WindowsMemIsolatorProcess : public WindowsIsolatorProcess
 {
