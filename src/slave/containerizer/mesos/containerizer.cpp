@@ -76,6 +76,10 @@
 #include "slave/containerizer/mesos/isolators/network/port_mapping.hpp"
 #endif
 
+#ifdef __WINDOWS__
+#include <slave/containerizer/mesos/isolators/windows.hpp>
+#endif // __WINDOWS__
+
 #include "slave/containerizer/mesos/containerizer.hpp"
 #include "slave/containerizer/mesos/launch.hpp"
 #include "slave/containerizer/mesos/provisioner/provisioner.hpp"
@@ -221,6 +225,8 @@ Try<MesosContainerizer*> MesosContainerizer::create(
 #ifdef WITH_NETWORK_ISOLATOR
     {"network/port_mapping", &PortMappingIsolatorProcess::create},
 #endif
+#else
+    {"windows/mem", &WindowsMemIsolatorProcess::create},
 #endif // __WINDOWS__
   };
 

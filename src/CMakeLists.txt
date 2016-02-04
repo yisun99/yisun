@@ -240,6 +240,7 @@ set(AGENT_SRC
   slave/containerizer/mesos/provisioner/appc/store.cpp
   slave/containerizer/mesos/provisioner/appc/paths.cpp
   slave/containerizer/mesos/provisioner/appc/spec.cpp
+  slave/containerizer/mesos/isolator.cpp
   )
 
 if (NOT WIN32)
@@ -247,7 +248,6 @@ if (NOT WIN32)
     ${AGENT_SRC}
     slave/slave.cpp
     slave/containerizer/docker.cpp
-    slave/containerizer/mesos/isolator.cpp
     slave/containerizer/mesos/mount.cpp
     slave/containerizer/mesos/isolators/posix/disk.cpp
     slave/containerizer/mesos/provisioner/docker/message.proto
