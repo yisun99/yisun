@@ -15,6 +15,7 @@
 
 #include <direct.h>
 #include <io.h>
+#include <psapi.h>
 
 #include <sys/utime.h>
 
@@ -41,9 +42,135 @@
 
 namespace os {
 
+inline Try<std::set<pid_t>> pids()
+{
+    // Windows does not have the concept of a process group, so we need to
+    // enumerate all processes.
+    //
+    // The list of processes might differ between calls, so continue calling
+    // `EnumProcesses` until the output buffer is large enough. The call is
+    // considered to fully succeed when the function returns non-zero and the
+    // number of bytes returned is less than the size of the `pids` array. If
+    // that's not the case, then we need to increase the size of the `pids` array
+    // and attempt the call again.
+    //
+    // To minimize the number of calls (at the expense
+    // or memory), we choose to allocate double the amount suggested by
+    // `EnumProcesses`.
+    DWORD *pids = NULL;
+    DWORD bytes = 1024;
+    DWORD pids_size = 0;
+
+    // Double the size of the `pids` array. Note that the magic constant `2`
+    // below actually means 'double the size' and is not meant as a poor
+    // substitute for 'sizeof(something)'.
+    while (pids_size <= bytes) {
+        pids_size = 2 * bytes;
+        DWORD *reallocated_pids = (DWORD *)realloc(pids, pids_size);
+
+        if (reallocated_pids == NULL) {
+            if (pids != NULL) {
+                free(pids);
+
+            }
+            return WindowsError("os::pids(): Failed to allocate memory");
+        }
+
+        pids = reallocated_pids;
+
+        if (!::EnumProcesses(pids, pids_size, &bytes)) {
+            free(pids);
+            return WindowsError("os::pids(): Failed to call EnumProcesses");
+        }
+    }
+
+    std::set<pid_t> result;
+    for (DWORD i = 0; i < bytes / sizeof(DWORD); i++) {
+        result.insert(pids[i]);
+    }
+
+    free(pids);
+    return result;
+}
+
+inline Result<Process> process(pid_t pid)
+{
+    // Open the process
+    HANDLE hProcess;
+    hProcess = ::OpenProcess(
+        PROCESS_QUERY_INFORMATION | SYNCHRONIZE,
+        FALSE,
+        static_cast<DWORD>(pid));
+
+    // Error out if not able to open
+    if (hProcess == NULL)
+    {
+        return WindowsError("os::process(): Failed to call OpenProcess");
+    }
+
+    std::shared_ptr<void> hSafeProcess(hProcess, ::CloseHandle);
+
+    // Retrieve the memory stats for the process
+    PROCESS_MEMORY_COUNTERS counters;
+    if (!::GetProcessMemoryInfo(
+        hSafeProcess.get(),
+        &counters,
+        sizeof(PROCESS_MEMORY_COUNTERS)))
+    {
+        return WindowsError("os::process(): Failed to call GetProcessMemoryInfo");
+    }
+
+    // Retrieve the cpu usage for the process
+    FILETIME creationTime, exitTime, kernelTime, userTime;
+    if (!::GetProcessTimes(
+        hSafeProcess.get(),
+        &creationTime,
+        &exitTime,
+        &kernelTime,
+        &userTime))
+    {
+        return WindowsError("os::process(): Failed to call GetProcessTimes");
+    }
+
+    LARGE_INTEGER lKernelTime, lUserTime; // in 100 nanoseconds
+    lKernelTime.HighPart = kernelTime.dwHighDateTime;
+    lKernelTime.LowPart = kernelTime.dwLowDateTime;
+    lUserTime.HighPart = userTime.dwHighDateTime;
+    lUserTime.LowPart = userTime.dwLowDateTime;
+
+    double dKernelTime, dUserTime; // in seconds
+    dKernelTime = lKernelTime.QuadPart / 10000000;
+    dUserTime = lUserTime.QuadPart / 10000000;
+
+    return Process(pid,                      // process id
+        0,                                   // parent process id
+        0,                                   // process group
+        0,                                   // session id
+        Bytes(counters.WorkingSetSize),      // working set in bytes
+        Duration::create(dUserTime).get(),   // user time in seconds
+        Duration::create(dKernelTime).get(), // kernel time in seconds
+        "",                                  // command line
+        false);                              // zombie?
+}
+
 inline Try<std::list<Process>> processes()
 {
-  return std::list<Process>();
+    const Try<std::set<pid_t>> pids = os::pids();
+
+    if (pids.isError()) {
+        return Error(pids.error());
+    }
+
+    std::list<Process> result;
+    foreach(pid_t pid, pids.get()) {
+        const Result<Process> process = os::process(pid);
+
+        // Ignore any processes that disappear.
+        if (process.isSome()) {
+            result.push_back(process.get());
+        }
+    }
+    return result;
 }
 
 inline Option<Process> process(
@@ -461,40 +588,6 @@ decltype(_access(fileName.c_str(), accessMode))
   return _access(fileName.c_str(), accessMode);
 }
 
-inline Result<Process> process(pid_t pid)
-{
-  /*
-  // Page size, used for memory accounting.
-  SYSTEM_INFO systemInfo;
-  GetNativeSystemInfo (&systemInfo);
-  static const long pageSize = systemInfo.dwPageSize;
-  if (pageSize <= 0) {
-  return Error("Failed to get SYSTEM_INFO::dwPageSize");
-  }
-
-  // Number of clock ticks per second, used for cpu accounting.
-  long tmpTicks = 0;
-  QueryPerformanceFrequency((LARGE_INTEGER*)&tmpTicks);
-  static const long ticks = tmpTicks;
-  if (ticks <= 0) {
-  return Error("Failed to get QueryPerformanceFrequency");
-  }
-  */
-
-  //
-  // TODO: What we need to do here is:
-  // - Check if process still exists based on pid
-  // - Get windows process stats and fill up process struct properly
-  return Process(pid,
-    0,
-    0,
-    0,
-    0,
-    Option<Duration>::none(),
-    Option<Duration>::none(),
-    "",
-    false);
-}
 } // namespace os {
 
 
