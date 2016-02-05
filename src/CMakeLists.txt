@@ -323,6 +323,7 @@ set(MESOS_SRC
   ${VERSION_SRC}
   ${ZOOKEEPER_SRC}
   ${MASTER_SRC}
+  ${USAGE_SRC}
   )
 
 if (NOT WIN32)
@@ -337,7 +338,6 @@ if (NOT WIN32)
     ${SCHED_SRC}
     ${SCHEDULER_SRC}
     ${URI_SRC}
-    ${USAGE_SRC}
     ${WATCHER_SRC}
     )
 endif (NOT WIN32)

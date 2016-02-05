@@ -148,10 +148,22 @@ public:
   virtual process::Future<ResourceStatistics> usage(
     const ContainerID& containerId)
   {
-    return ResourceStatistics();
+      if (!pids.contains(containerId)) {
+          LOG(WARNING) << "No resource usage for unknown container '"
+              << containerId << "'";
+          return ResourceStatistics();
+      }
+
+      // Use 'mesos-usage' but only request 'cpus_' values.
+      Try<ResourceStatistics> usage =
+          mesos::internal::usage(pids.get(containerId).get(), false, true);
+      if (usage.isError()) {
+          return process::Failure(usage.error());
+      }
+      return usage.get();
   }
 
-protected:
+private:
   WindowsCpuIsolatorProcess() {}
 };
 
@@ -175,7 +187,6 @@ public:
       return ResourceStatistics();
     }
 
-/*
     // Use 'mesos-usage' but only request 'mem_' values.
     Try<ResourceStatistics> usage =
       mesos::internal::usage(pids.get(containerId).get(), true, false);
@@ -183,8 +194,6 @@ public:
       return process::Failure(usage.error());
     }
     return usage.get();
-*/
-    return ResourceStatistics();
   }
 
 private:
@@ -195,4 +204,4 @@ private:
 } // namespace internal {
 } // namespace mesos {
 
-#endif // __POSIX_ISOLATOR_HPP__
+#endif // __WINDOWS_ISOLATOR_HPP__

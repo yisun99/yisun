@@ -14,7 +14,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#ifndef __WINDOWS__
 #include <unistd.h> // For pid_t.
+#endif // !__WINDOWS__
 
 #include <deque>
 
@@ -30,7 +32,13 @@ namespace internal {
 
 Try<ResourceStatistics> usage(pid_t pid, bool mem, bool cpus)
 {
-  Try<os::ProcessTree> pstree = os::pstree(pid);
+  const Try<std::list<os::Process>> processes = os::processes();
+
+  if (processes.isError()) {
+      return Error(processes.error());
+  }
+
+  Try<os::ProcessTree> pstree = os::pstree(pid, processes.get());
 
   if (pstree.isError()) {
     return Error("Failed to get usage: " + pstree.error());
