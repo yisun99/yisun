@@ -127,6 +127,142 @@ Future<Nothing> WindowsFilesystemIsolatorProcess::update(
 
   const Owned<Info>& info = infos[containerId];
 
+  // TODO(jieyu): Currently, we only allow non-nested relative
+  // container paths for volumes. This is enforced by the master. For
+  // those volumes, we create symlinks in the executor directory.
+  Resources current = info->resources;
+
+  // We first remove unneeded persistent volumes.
+  foreach(const Resource& resource, current.persistentVolumes()) {
+      // This is enforced by the master.
+      CHECK(resource.disk().has_volume());
+
+      // Ignore absolute and nested paths.
+      const string& containerPath = resource.disk().volume().container_path();
+      if (strings::contains(containerPath, "/")) {
+          LOG(WARNING) << "Skipping updating symlink for persistent volume "
+              << resource << " of container " << containerId
+              << " because the container path '" << containerPath
+              << "' contains slash";
+          continue;
+      }
+
+      if (resources.contains(resource)) {
+          continue;
+      }
+
+      string link = path::join(info->directory, containerPath);
+
+      LOG(INFO) << "Removing symlink '" << link << "' for persistent volume "
+          << resource << " of container " << containerId;
+
+      Try<Nothing> rm = os::rm(link);
+      if (rm.isError()) {
+          return Failure(
+              "Failed to remove the symlink for the unneeded "
+              "persistent volume at '" + link + "'");
+      }
+  }
+
+  // We then link additional persistent volumes.
+  foreach(const Resource& resource, resources.persistentVolumes()) {
+      // This is enforced by the master.
+      CHECK(resource.disk().has_volume());
+
+      // Ignore absolute and nested paths.
+      const string& containerPath = resource.disk().volume().container_path();
+      if (strings::contains(containerPath, "/")) {
+          LOG(WARNING) << "Skipping updating symlink for persistent volume "
+              << resource << " of container " << containerId
+              << " because the container path '" << containerPath
+              << "' contains slash";
+          continue;
+      }
+
+      if (current.contains(resource)) {
+          continue;
+      }
+
+      string original = paths::getPersistentVolumePath(flags.work_dir, resource);
+
+      // Set the ownership of the persistent volume to match that of the
+      // sandbox directory.
+      //
+      // NOTE: Currently, persistent volumes in Mesos are exclusive,
+      // meaning that if a persistent volume is used by one task or
+      // executor, it cannot be concurrently used by other task or
+      // executor. But if we allow multiple executors to use same
+      // persistent volume at the same time in the future, the ownership
+      // of the persistent volume may conflict here.
+      //
+      // TODO(haosdent): Consider letting the frameworks specify the
+      // user/group of the persistent volumes.
+      struct stat s;
+      if (::stat(info->directory.c_str(), &s) < 0) {
+          return Failure("Failed to get ownership for '" + info->directory + "': " +
+              os::strerror(errno));
+      }
+
+      LOG(INFO) << "Changing the ownership of the persistent volume at '"
+          << original << "' with uid " << s.st_uid
+          << " and gid " << s.st_gid;
+
+#ifndef __WINDOWS__
+      Try<Nothing> chown = os::chown(s.st_uid, s.st_gid, original, true);
+      if (chown.isError()) {
+          return Failure(
+              "Failed to change the ownership of the persistent volume at '" +
+              original + "' with uid " + stringify(s.st_uid) +
+              " and gid " + stringify(s.st_gid) + ": " + chown.error());
+      }
+#endif // __WINDOWS__
+
+      string link = path::join(info->directory, containerPath);
+
+      if (os::exists(link)) {
+          // NOTE: This is possible because 'info->resources' will be
+          // reset when slave restarts and recovers. When the slave calls
+          // 'containerizer->update' after the executor re-registers,
+          // we'll try to relink all the already symlinked volumes.
+          Result<string> realpath = os::realpath(link);
+          if (!realpath.isSome()) {
+              return Failure(
+                  "Failed to get the realpath of symlink '" + link + "': " +
+                  (realpath.isError() ? realpath.error() : "No such directory"));
+          }
+
+          // A sanity check to make sure the target of the symlink does
+          // not change. In fact, this is not supposed to happen.
+          // NOTE: Here, we compare the realpaths because 'original' might
+          // contain symbolic links.
+          Result<string> _original = os::realpath(original);
+          if (!_original.isSome()) {
+              return Failure(
+                  "Failed to get the realpath of volume '" + original + "': " +
+                  (_original.isError() ? _original.error() : "No such directory"));
+          }
+
+          if (realpath.get() != _original.get()) {
+              return Failure(
+                  "The existing symlink '" + link + "' points to '" +
+                  _original.get() + "' and the new target is '" +
+                  realpath.get() + "'");
+          }
+      }
+      else {
+          LOG(INFO) << "Adding symlink from '" << original << "' to '"
+              << link << "' for persistent volume " << resource
+              << " of container " << containerId;
+
+          Try<Nothing> symlink = ::fs::symlink(original, link);
+          if (symlink.isError()) {
+              return Failure(
+                  "Failed to symlink persistent volume from '" +
+                  original + "' to '" + link + "'");
+          }
+      }
+  }
+
   // Store the updated resources.
   info->resources = resources;
 
