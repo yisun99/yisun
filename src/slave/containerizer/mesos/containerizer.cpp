@@ -51,7 +51,11 @@
 
 #include "slave/containerizer/mesos/isolators/posix.hpp"
 
+#ifndef __WINDOWS__
 #include "slave/containerizer/mesos/isolators/posix/disk.hpp"
+#else
+#include "slave/containerizer/mesos/isolators/windows/disk.hpp"
+#endif // __WINDOWS__
 
 #ifdef __linux__
 #include "slave/containerizer/mesos/isolators/cgroups/cpushare.hpp"
@@ -230,8 +234,9 @@ Try<MesosContainerizer*> MesosContainerizer::create(
 #endif
 #else // !__WINDOWS__
     { "windows/cpu", &WindowsCpuIsolatorProcess::create },
-    { "filesystem/windows", &WindowsFilesystemIsolatorProcess::create },
-    {"windows/mem", &WindowsMemIsolatorProcess::create}
+    { "windows/mem", &WindowsMemIsolatorProcess::create},
+    { "windows/disk", &WindowsDiskIsolatorProcess::create },
+    { "filesystem/windows", &WindowsFilesystemIsolatorProcess::create }
 #endif // __WINDOWS__
   };
 

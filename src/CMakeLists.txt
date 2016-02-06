@@ -137,6 +137,7 @@ set(LINUX_SRC
 set(WIN32_SRC
   ${WIN32_SRC}
   slave/containerizer/mesos/isolators/filesystem/windows.cpp
+  slave/containerizer/mesos/isolators/windows/disk.cpp
   )
 
 set(DOCKER_SRC
